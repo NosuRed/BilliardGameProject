@@ -164,14 +164,50 @@ export default class Billiard extends Phaser.Scene {
 
 
     createEightBallGame(ballScale) {
-        this.balls = [
-            new Ball({scene: this, x: 20, y: 150, texture: 'purpleBall', id: 1}).setScale(ballScale),
-            new Ball({scene: this, x: 50, y: 300, texture: 'purpleBall', id: 2}).setScale(ballScale),
-            new Ball({scene: this, x: 400, y: 400, texture: 'purpleBall', id: 4}).setScale(ballScale),
-            new Ball({scene: this, x: 300, y: 450, texture: 'purpleBall', id: 5}).setScale(ballScale),
-            new Ball({scene: this, x: 100, y: 400, texture: 'purpleBall', id: 6}).setScale(ballScale),
-            new Ball({scene: this, x: 200, y: 400, texture: 'purpleBall', id: 7}).setScale(ballScale)
-        ];
+        let xStart: number = 400;
+        let yStart: number = 300;
+        let xValues: any[] = [];
+        let yValues: any[] = [];
+        let oldXValue: number = xStart;
+        let oldYValue: number = yStart;
+        let i = 1;
+        let idCount = 1;
+        this.balls = [];
+
+        while(i < 6){
+            xValues.push(xStart);
+            for (let j = 6; j > i; j--) {
+                yValues.push(yStart);
+                yStart -= 20;
+            }
+            yStart = oldYValue + 20;
+            oldYValue = yStart;
+            xStart += 20;
+            idCount++;
+            i++;
+
+
+        }
+        let y = 0;
+        let index = 0;
+        while (xValues.length > 0) {
+            for (let k = 0; k < xValues.length; k++) {
+                console.log(yValues[index] + " " +  xValues[k]);
+                this.balls.push(new Ball({
+                    scene: this,
+                    x: xValues[k],
+                    y: yValues[index],
+                    texture: 'cueBall',
+                    id: 0
+                }).setScale(ballScale));
+
+                index++;
+            }
+            xValues.splice(0,1);
+
+        }
+
+
     }
 }
 
@@ -194,7 +230,6 @@ const game = new Phaser.Game(config);
 
 
 class Ball extends Phaser.Physics.Arcade.Sprite {
-    private friction = 0.985;
     private id: number = 0;
 
     constructor(config) {
@@ -204,18 +239,17 @@ class Ball extends Phaser.Physics.Arcade.Sprite {
 
 
         // Add the ball to the scene and enable physics
-        config.scene.physics.add.existing(this, false);
+        config.scene.physics.add.existing(this);
 
         // Set the bounce property for the ball
-        this.setBounce(1.1, 1.1);
+        this.setBounce(1,1);
         this.setCollideWorldBounds(true);
-
+        this.body.setMass(1);
+        this.setDrag(75, 75);
 
     }
 
     update() {
-        this.body.velocity.x *= this.friction;
-        this.body.velocity.y *= this.friction;
         if (Math.abs(this.body.velocity.x) <= 2) {
             this.body.velocity.x = 0;
         }
