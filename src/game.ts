@@ -168,8 +168,9 @@ export default class Billiard extends Phaser.Scene {
         let yStart: number = 300;
         let xValues: any[] = [];
         let yValues: any[] = [];
-        let oldXValue: number = xStart;
         let oldYValue: number = yStart;
+        const xSpacing: number = 30;
+        const ySpacing : number = 15;
         let i = 1;
         let idCount = 1;
         this.balls = [];
@@ -180,9 +181,9 @@ export default class Billiard extends Phaser.Scene {
                 yValues.push(yStart);
                 yStart -= 20;
             }
-            yStart = oldYValue + 20;
+            yStart = oldYValue + ySpacing;
             oldYValue = yStart;
-            xStart += 20;
+            xStart += xSpacing;
             idCount++;
             i++;
 
