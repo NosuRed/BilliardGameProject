@@ -6,7 +6,7 @@ export default class Billiard extends Phaser.Scene {
     private cueBallSpeed = 650;
     private ballX = 200;
     private ballY: number = 300;
-    private balls;
+    private balls = [];
     private cueBall;
     private velocityTX;
     private pockets;
@@ -40,12 +40,13 @@ export default class Billiard extends Phaser.Scene {
         this.physics.world.setBounds(15, 100, 775, 400,
             true, true, true, true);
 
-
         //array of balls
+        this.balls.push(this.cueBall);
         this.createEightBallGame(ballScale);
 
 
         this.drawPockets(table);
+
 
 
         // Add collision between the cue ball and each ball in the array
@@ -56,7 +57,7 @@ export default class Billiard extends Phaser.Scene {
         //collision between each pair of balls in the array
         for (let i = 0; i < this.balls.length; i++) {
             for (let j = i + 1; j < this.balls.length; j++) {
-                this.physics.add.collider(this.balls[i], this.balls[j]);
+                this.physics.add.collider(this.balls[i], this.balls[j], this.ballCollisionHandler, null, this);
             }
         }
 
@@ -84,6 +85,8 @@ export default class Billiard extends Phaser.Scene {
 
         });
         this.cueBall.update();
+
+
     }
 
     drawPockets(table) {
@@ -106,13 +109,6 @@ export default class Billiard extends Phaser.Scene {
             {x: (table.x - 20) + pocketSize, y: table.y + 190}
         ];
 
-        /*
-        this.pockets.forEach(pocket => {
-            graphics.fillStyle(0x000000, alphaChannel);
-            graphics.fillCircle(pocket.x, pocket.y, pocketSize);
-        });
-    */
-
 
         const pocketColliders = this.physics.add.staticGroup();
         this.pockets.forEach((pocket) => {
@@ -123,6 +119,8 @@ export default class Billiard extends Phaser.Scene {
                 .setDepth(0);
 
             pocketColliders.add(pocketCollider);
+
+            pocketCollider.setOrigin(0.5);
 
             // Overlap handler for balls and pockets
             this.physics.add.overlap(
@@ -149,18 +147,43 @@ export default class Billiard extends Phaser.Scene {
 
     ballPocketOverlapHandler(ball, pocket) {
         const ballTobeRemoved = this.balls.indexOf(ball);
-        console.log(`Ball ${ball.getID()} overlapped with pocket.`);
-        if (ball.getID !== 0) {
+        console.log("Ball " + ball.getID() +" Hit the pocket lul");
+
+        if (ball.getID() !== 0) {
+            console.log("Game ball hit the pocket" + " " + ball.getID());
             ball.destroy();
             this.balls.splice(ballTobeRemoved, 1);
-        } else if (ball.getID()) {
-
+            //CueBall hits pocket :)
+        } else if (ball.getID() === 0) {
+            console.log("White Cue ball hit the pocket" + " " + ball.getID());
+            ball.body.velocity.set(0);
+            this.cueBall.setPosition(this.ballX, this.ballY);
         }
     }
 
 
-    tenBallWinCondition() {
+    ballCollisionHandler(ball1, ball2) {
+        const angle = Phaser.Math.Angle.Between(ball1.x, ball1.y, ball2.x, ball2.y);
+        const velocity1 = new Phaser.Math.Vector2(ball1.body.velocity.x, ball1.body.velocity.y);
+        const velocity2 = new Phaser.Math.Vector2(ball2.body.velocity.x, ball2.body.velocity.y);
+        const mass1 = ball1.body.mass;
+        const mass2 = ball2.body.mass;
 
+        // Calculate the velocities after the collision
+        const newVelocity1 = velocity1.clone().rotate(angle);
+        const newVelocity2 = velocity2.clone().rotate(angle);
+
+        // Swap the velocities of the balls
+        ball1.body.velocity.set(newVelocity2.x, newVelocity2.y);
+        ball2.body.velocity.set(newVelocity1.x, newVelocity1.y);
+
+        // Adjust the angular velocity based on the collision angle and the difference in velocities
+        const angularVelocity1 = ball1.body.angularVelocity;
+        const angularVelocity2 = ball2.body.angularVelocity;
+        const difference = angularVelocity1 - angularVelocity2;
+
+        ball1.body.angularVelocity = angularVelocity1 - difference * mass2 / (mass1 + mass2);
+        ball2.body.angularVelocity = angularVelocity2 + difference * mass1 / (mass1 + mass2);
     }
 
 
@@ -174,7 +197,6 @@ export default class Billiard extends Phaser.Scene {
         const ySpacing : number = 15;
         let i = 1;
         let idCount = 1;
-        this.balls = [];
 
         while(i < 6){
             xValues.push(xStart);
@@ -194,13 +216,13 @@ export default class Billiard extends Phaser.Scene {
         let index = 0;
         while (xValues.length > 0) {
             for (let k = 0; k < xValues.length; k++) {
-                console.log(yValues[index] + " " +  xValues[k]);
+               // console.log(yValues[index] + " " +  xValues[k]);
                 this.balls.push(new Ball({
                     scene: this,
                     x: xValues[k],
                     y: yValues[index],
-                    texture: 'cueBall',
-                    id: 0
+                    texture: 'purpleBall',
+                    id: index
                 }).setScale(ballScale));
 
                 index++;
