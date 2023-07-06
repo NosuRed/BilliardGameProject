@@ -15,7 +15,7 @@ export default class Billiard extends Phaser.Scene {
     private currentPlayer = 0; // Player 0 or Player 1
     private fullBallsDesignation:number[] = [1, 2, 3, 4, 5, 6, 7]; // Full balls: 1 to 7
     private halfBallsDesignation = [9, 10, 11, 12, 13, 14, 15]; // Half balls: 9 to 15
-    private eightBallDesignation = 8; // Eight ball: 8
+    private eightBallDesignation = 8; // Eight's ball: 8
 
     constructor() {
         super('Billiard');
