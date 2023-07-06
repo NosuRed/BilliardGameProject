@@ -24,6 +24,7 @@ export class Ball extends Phaser.Physics.Arcade.Sprite {
         this.setInteractive();
         this.on('pointerdown', this.onPointerDown, this);
         this.on('pointerup', this.onPointerUp, this);
+        this.setCircle(40);
 
     }
 

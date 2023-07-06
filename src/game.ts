@@ -12,12 +12,10 @@ export default class Billiard extends Phaser.Scene {
     private pockets;
     private otherBallsMoving;
 
-    private playerOneBalls = [];
-    private playerOnePlayBalls = -1;
-    private playerTwoBalls = []
-    private  playerTwoPlayBalls = -1;
-    //0 = playerOnes turn. 1 = playerTwos turn.
-    private currentTurn = 0;
+    private currentPlayer = 0; // Player 0 or Player 1
+    private fullBallsDesignation:number[] = [1, 2, 3, 4, 5, 6, 7]; // Full balls: 1 to 7
+    private halfBallsDesignation = [9, 10, 11, 12, 13, 14, 15]; // Half balls: 9 to 15
+    private eightBallDesignation = 8; // Eight ball: 8
 
     constructor() {
         super('Billiard');
@@ -64,7 +62,7 @@ export default class Billiard extends Phaser.Scene {
         //collision between each pair of balls in the array
         for (let i = 0; i < this.balls.length; i++) {
             for (let j = i + 1; j < this.balls.length; j++) {
-                this.physics.add.collider(this.balls[i], this.balls[j], this.ballCollisionHandler, null, this);
+                this.physics.add.collider(this.balls[i], this.balls[j]);
             }
         }
 
@@ -130,7 +128,6 @@ export default class Billiard extends Phaser.Scene {
                 .setVisible(false)
                 .setStrokeStyle(0)
                 .setDepth(0);
-
             pocketColliders.add(pocketCollider);
 
             pocketCollider.setOrigin(0.3);
@@ -144,6 +141,8 @@ export default class Billiard extends Phaser.Scene {
                 this
             );
         });
+
+
 
         graphics.fillStyle(0x000000, alphaChannel);
         pocketColliders.getChildren().forEach((pocketCollider) => {
@@ -160,77 +159,9 @@ export default class Billiard extends Phaser.Scene {
 
     ballPocketOverlapHandler(ball, pocket) {
         const ballTobeRemoved = this.balls.indexOf(ball);
-        console.log("Ball " + ball.getID() +" Hit the pocket lul");
-        console.log(pocket.x + " " + pocket.y)
-        if (ball.getID() !== 0) {
-            this.eightBallRules(ball, pocket);
+        console.log("Ball " + ball.getID() + " Hit the pocket.");
 
 
-            //CueBall hits pocket :)
-        } else if (ball.getID() === 0) {
-            console.log("White Cue ball hit the pocket" + " " + ball.getID());
-            if(this.currentTurn === 0){
-                this.currentTurn = 1;
-            }else{
-                this.currentTurn = 0;
-            }
-            ball.body.velocity.set(0);
-            this.cueBall.setPosition(this.ballX, this.ballY);
-        }
-    }
-    eightBallRules(ball, pocket){
-        const ballTobeRemoved = this.balls.indexOf(ball);
-        if(this.currentTurn == 0) {
-            if (this.playerOneBalls.length === 0) {
-                this.playerOneBalls.push(ball);
-                this.playerOnePlayBalls = ball.getID();
-
-                ball.destroy();
-                this.balls.splice(ballTobeRemoved, 1);
-            } else if (this.playerOneBalls.length < 7 && ball.getID() === this.playerOnePlayBalls) {
-                this.playerOneBalls.push(ball);
-
-                ball.destroy();
-                this.balls.splice(ballTobeRemoved, 1);
-            }
-        }else {
-            if (this.playerTwoBalls.length === 0) {
-                this.playerTwoBalls.push(ball);
-                this.playerTwoPlayBalls = ball.getID();
-                ball.destroy();
-                this.balls.splice(ballTobeRemoved, 1);
-            } else if (this.playerTwoBalls.length < 7 && ball.getID() === this.playerTwoPlayBalls) {
-                this.playerOneBalls.push(ball);
-                ball.destroy();
-                this.balls.splice(ballTobeRemoved, 1);
-            }
-        }
-        console.log(this.playerOneBalls.length + " " +  this.playerTwoBalls.length + " player: " + this.currentTurn);
-
-    }
-
-
-    ballCollisionHandler(ball1, ball2) {
-        const angle = Phaser.Math.Angle.Between(ball1.x, ball1.y, ball2.x, ball2.y);
-        const velocity1 = new Phaser.Math.Vector2(ball1.body.velocity.x, ball1.body.velocity.y);
-        const velocity2 = new Phaser.Math.Vector2(ball2.body.velocity.x, ball2.body.velocity.y);
-        const mass1 = ball1.body.mass;
-        const mass2 = ball2.body.mass;
-
-        // Calculate the velocities after the collision using conservation of momentum and kinetic energy
-        const v1x = velocity1.x;
-        const v1y = velocity1.y;
-        const v2x = velocity2.x;
-        const v2y = velocity2.y;
-
-        const newV1x = ((mass1 - mass2) * v1x + 2 * mass2 * v2x) / (mass1 + mass2);
-        const newV1y = ((mass1 - mass2) * v1y + 2 * mass2 * v2y) / (mass1 + mass2);
-        const newV2x = ((mass2 - mass1) * v2x + 2 * mass1 * v1x) / (mass1 + mass2);
-        const newV2y = ((mass2 - mass1) * v2y + 2 * mass1 * v1y) / (mass1 + mass2);
-
-        // Set the new velocities for the balls
-        ball1.body.velocity.set(newV1x, newV1y);
-        ball2.body.velocity.set(newV2x, newV2y);
     }
 
 
@@ -293,7 +224,8 @@ const config = {
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: {y: 0}
+            gravity: {y: 0},
+            debug: true
         }
     }
 };
