@@ -121,16 +121,12 @@ export default class Billiard extends Phaser.Scene {
         ];
 
 
-        const pocketColliders = this.physics.add.staticGroup();
         this.pockets.forEach((pocket) => {
-            const pocketCollider = this.add
-                .circle(pocket.x, pocket.y, pocketSize)
-                .setVisible(false)
-                .setStrokeStyle(0)
-                .setDepth(0);
-            pocketColliders.add(pocketCollider);
-
-            pocketCollider.setOrigin(0.3);
+            const pocketCollider = this.physics.add.sprite(pocket.x, pocket.y, 'cueBall');
+            pocketCollider.setScale(0.4);
+            pocketCollider.setVisible(false);
+            pocketCollider.setCircle(45); // Set circular hitbox
+            pocketCollider.body.setAllowGravity(false); // Make the collider unaffected by gravity
 
             // Overlap handler for balls and pockets
             this.physics.add.overlap(
@@ -144,15 +140,9 @@ export default class Billiard extends Phaser.Scene {
 
 
 
-        graphics.fillStyle(0x000000, alphaChannel);
-        pocketColliders.getChildren().forEach((pocketCollider) => {
-            const {x, y} = pocketCollider.body.gameObject;
-            graphics.fillCircle(x, y, pocketSize);
-        });
-
-
         graphics.setDepth(1);
         graphics.generateTexture('pockets', pocketSize * 2, pocketSize * 2);
+
 
     }
 
@@ -160,6 +150,14 @@ export default class Billiard extends Phaser.Scene {
     ballPocketOverlapHandler(ball, pocket) {
         const ballTobeRemoved = this.balls.indexOf(ball);
         console.log("Ball " + ball.getID() + " Hit the pocket.");
+        if(ball.id !== 0) {
+            ball.destroy();
+            this.balls.splice(ballTobeRemoved, 1);
+        }else{
+            this.cueBall.setVelocity(0);
+            this.cueBall.setX(this.ballX);
+            this.cueBall.setY(this.ballY);
+        }
 
 
     }
