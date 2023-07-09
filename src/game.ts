@@ -1,12 +1,11 @@
 import * as Phaser from 'phaser';
 import {Ball} from './Ball';
-// rules used: https://www.billardpro.de/pool-billard-regeln#achtball #Last date visited: 05/07/2023
 
 export default class Billiard extends Phaser.Scene {
     private cueBallSpeed = 1000;
-    private ballX = 200;
+    private ballX: number = 200;
     private ballY: number = 300;
-    private balls = [];
+    private balls: any[] = [];
     private cueBall;
     private velocityTX;
     private playersTurnTX;
@@ -14,13 +13,10 @@ export default class Billiard extends Phaser.Scene {
     private otherBallsMoving;
     private eightGame;
     private gameWinner: number = -1;
-
+    private distance;
     private currentPlayer: number = 0; // Player1 = 0; Player2 = 1;
-    private fullBallsDesignation:number[] = [1, 2, 3, 4, 5, 6, 7]; // Full balls: 1 to 7
-    private halfBallsDesignation: number[] = [9, 10, 11, 12, 13, 14, 15]; // Half balls: 9 to 15
-    private eightBallDesignation: number = 8; // Ball with the #8
-    private playerOnePlays: string;
-    private playerTwoPlays: string;
+    private playerOnePlays: string = '';
+    private playerTwoPlays: string = '';
     private playerOneBallList: any[] = [];
     private playerTwoBallList: any[] = [];
 
@@ -28,16 +24,41 @@ export default class Billiard extends Phaser.Scene {
         super('Billiard');
     }
 
+    init() {
+        this.cueBallSpeed = 1000;
+        this.ballX = 200;
+        this.ballY = 300;
+        this.balls = [];
+        this.cueBall;
+        this.velocityTX;
+        this.playersTurnTX;
+        this.pockets;
+        this.otherBallsMoving;
+        this.eightGame;
+        this.gameWinner = -1;
+        this.currentPlayer = 0; // Player1 = 0; Player2 = 1;
+        this.playerOnePlays = '';
+        this.playerTwoPlays = '';
+        this.playerOneBallList = [];
+        this.playerTwoBallList = [];
+    }
+
     preload() {
         this.load.image('table', 'assets/PlaceHolderBilliardTable.png');
         this.load.image('cueBall', 'assets/whiteCueBallPlaceholder.png');
         this.load.image('purpleBall', 'assets/PurpleBallPlaceholder.png');
         this.load.image('cueStick', 'assets/cueStickPlaceholder.png');
+
+        for (let i = 1; i < 16; i++) {
+            this.load.image('ball' + i, 'assets/ballsPNGS/ball' + i + '.png');
+        }
+
     }
 
     create() {
-
-        let ballScale = 0.3;
+        let ballStrengthModifier: number = 2.5;
+        let lineGraphics;
+        let ballScale: number = 0.3;
         const table = this.add.image(400, 300, 'table');
         table.depth = 0;
         this.cueBall = new Ball({
@@ -47,8 +68,6 @@ export default class Billiard extends Phaser.Scene {
             texture: 'cueBall',
             id: 0
         }).setScale(ballScale);
-
-
         this.physics.world.setBounds(15, 100, 775, 400,
             true, true, true, true);
 
@@ -58,57 +77,145 @@ export default class Billiard extends Phaser.Scene {
 
         this.drawPockets(table);
 
+            // Add collision between the cue ball and each ball in the array
+            this.balls.forEach(ball => {
+                this.physics.add.collider(this.cueBall, ball);
+            });
 
-
-        // Add collision between the cue ball and each ball in the array
-        this.balls.forEach(ball => {
-            this.physics.add.collider(this.cueBall, ball);
-        });
-
-        //collision between each pair of balls in the array
-        for (let i = 0; i < this.balls.length; i++) {
-            for (let j = i + 1; j < this.balls.length; j++) {
-                this.physics.add.collider(this.balls[i], this.balls[j]);
-            }
-        }
-
-
-        const allBallsStopped = this.balls.every((ball) => {
-            return ball.body.velocity.x < 2 && ball.body.velocity.y < 2;
-        });
-
-        this.input.on('pointerdown', (pointer) => {
-            if (pointer.leftButtonDown()) {
-                if (this.cueBall.body.velocity.length() < 2 && allBallsStopped) {
-                    let angle = Phaser.Math.Angle.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
-                    this.physics.velocityFromRotation(angle, this.cueBallSpeed, this.cueBall.body.velocity);
+            //collision between each pair of balls in the array
+            for (let i = 0; i < this.balls.length; i++) {
+                for (let j = i + 1; j < this.balls.length; j++) {
+                    this.physics.add.collider(this.balls[i], this.balls[j]);
                 }
             }
 
+
+            const allBallsStopped = this.balls.every((ball) => {
+                return ball.body.velocity.length() < 2;
+            });
+
+
+
+
+
+            this.input.on('pointermove', (pointer) => {
+                if (lineGraphics) {
+                    lineGraphics.clear();
+                }
+
+                // Draw a line from the cue ball to the mouse cursor
+                lineGraphics = this.add.graphics();
+                lineGraphics.lineStyle(2, 0xffffff);
+                lineGraphics.beginPath();
+                lineGraphics.moveTo(this.cueBall.x, this.cueBall.y);
+                lineGraphics.lineTo(pointer.x, pointer.y);
+                lineGraphics.strokePath();
+            });
+
+        this.input.on('pointerup', () => {
+            if (lineGraphics) {
+                lineGraphics.destroy();
+                lineGraphics = null;
+            }
         });
 
-        this.velocityTX = this.add.text(100, 100, 'Velocity: 0', {fontSize: '32px', color: '#111'});
-        this.playersTurnTX = this.add.text(200,200, 'Player: 0', {fontSize: '32px', color: '#111'});
 
+            this.input.on('pointerdown', (pointer) => {
+
+                if (pointer.leftButtonDown() && this.gameWinner === -1) {
+                    lineGraphics.destroy();
+                    lineGraphics = null;
+                    if (this.cueBall.body.velocity.length() < 2 && allBallsStopped) {
+                        this.distance = Phaser.Math.Distance.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
+                        let angle = Phaser.Math.Angle.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
+                        this.physics.velocityFromRotation(angle,
+                            this.distance * ballStrengthModifier,
+                            this.cueBall.body.velocity);
+
+                        this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
+                    }
+                }
+
+            });
+
+            this.velocityTX = this.add.text(100, 0, 'Strength: 0', {fontSize: '32px', color: '#111111'});
+            this.playersTurnTX = this.add.text(400, 0, 'Player: 0', {fontSize: '32px', color: '#111111'});
+            this.add.text(50, 525, 'Player 1 Balls: ', {fontSize: "16px", color: '#111111'})
+            this.add.text(450, 525, 'Player 2 Balls: ', {fontSize: "16px", color: '#111111'})
 
     }
 
     update() {
-        const cueBallVelocity = this.cueBall.body.velocity;
-        const cueBallLength = cueBallVelocity.length();
-        this.velocityTX.setText('Velocity: ' + cueBallLength);
-        this.playersTurnTX.setText("Player: " + this.currentPlayer);
-        this.balls.forEach((ball) => {
-            ball.update();
+            this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
+            if(this.currentPlayer == 0){
+                this.playersTurnTX.setText("Turn: Player: 1");
+            }else{
+                this.playersTurnTX.setText("Turn: Player: 2");
+            }
 
-        });
-        this.cueBall.update();
+            this.balls.forEach((ball) => {
+                ball.update();
 
+            });
+            this.cueBall.update();
+            if(this.gameWinner !== -1){
+                this.drawRestartButton();
+            }
 
     }
 
 
+    drawRestartButton(){
+        const x: number = 325;
+        const y: number = 200;
+        if(this.currentPlayer == 0){
+            this.add.text(x, y -25, 'Player: ' + 1 + " Won!" );
+        }else{
+            this.add.text(x, y -25, 'Player: ' + 2 + " Won!" );
+        }
+        const button = this.add.text(x, y, 'Play Again')
+        button.setInteractive();
+        button.setFontSize(20);
+        button.setPadding(10, 5);
+        button.setBackgroundColor('#333333');
+        button.setStroke('#ffffff', 2);
+        button.on('pointerdown', () => {
+            this.scene.restart();
+        });
 
+}
+
+    drawPlayerBalls() {
+        const p1StartPosX: number = 100;
+        const p1StartPosY: number = 575;
+        const p2StartPosX: number = 500;
+        const p2StartPosY: number = 575;
+        let spacer = 20;
+
+        if (this.currentPlayer == 0) {
+            if (this.playerOneBallList.length > 0) {
+                for (let ball in this.playerOneBallList) {
+                    this.playerOneBallList[ball].setX(p1StartPosX + spacer);
+                    this.playerOneBallList[ball].setY(p1StartPosY);
+                    this.playerOneBallList[ball].setVelocity(0);
+                    this.playerOneBallList[ball].setBounce(0);
+                    this.playerOneBallList[ball].setCollideWorldBounds(false);
+                    spacer += 30;
+                }
+            }
+        } else if (this.currentPlayer == 1) {
+            if (this.playerTwoBallList.length > 0) {
+                for (let ball in this.playerTwoBallList) {
+                    this.playerTwoBallList[ball].setX(p2StartPosX + spacer);
+                    this.playerTwoBallList[ball].setY(p2StartPosY);
+                    this.playerTwoBallList[ball].setVelocity(0);
+                    this.playerTwoBallList[ball].setBounce(0);
+                    this.playerTwoBallList[ball].setCollideWorldBounds(false);
+                    spacer += 30;
+                }
+            }
+        }
+    }
 
 
     drawPockets(table) {
@@ -122,7 +229,7 @@ export default class Billiard extends Phaser.Scene {
             //Upper Right Corner
             {x: table.x + table.width / 2 - 20, y: (table.y + 5) - table.height / 2 + 10, id: 2},
             //Lower Left Corner
-            {x: table.x - table.width / 2 + 20, y: (table.y - 5) + table.height / 2 - 10, id: 3 },
+            {x: table.x - table.width / 2 + 20, y: (table.y - 5) + table.height / 2 - 10, id: 3},
             //Lower Right Corner
             {x: table.x + table.width / 2 - 20, y: (table.y - 5) + table.height / 2 - 10, id: 5},
             //Upper Middle Corner
@@ -150,115 +257,91 @@ export default class Billiard extends Phaser.Scene {
         });
 
 
-
         graphics.setDepth(1);
         graphics.generateTexture('pockets', pocketSize * 2, pocketSize * 2);
 
 
     }
 
-    /*
-    winConditionCheckEightBall(ball, pocket, ballToBeRemoved  ){
-        /**
-         * Check whose turn it is.
-         * Is it p1 turn?
-         * Has he already sunk a ball?
-         * Is it a ball of his type?
-         * If yes, add it to his "Balls"
-         * if not, reset the white ball and the sunk ball.
-         * turn order change
 
-        if (this.currentPlayer === 0){
-            if((!(Array.isArray(this.playerOneBallList)) || this.playerOneBallList.length <= 0) && (!(Array.isArray(this.playerTwoBallList)) || this.playerTwoBallList.length <= 0)){
-                this.playerOneBallList.push(ball);
-                //set what balls to play
-                if(ball.getID() >= 9){
-                    this.playerOnePlays = "half";
-                    this.playerTwoPlays = "full";
-                }else{
-                    this.playerOnePlays = "full"
-                    this.playerTwoPlays = "half"
-                }
-             //A player already has sunk a ball.
-            }else{
-                //check if the ball can be played by the player
-                //p1[]; p2[9]
-                if(this.playerOnePlays === "half"){
-                    //Ball is indeed a half ball, so add it and continue playing
-                    if(ball.getID() >= 9){
-                        this.playerOneBallList.push(ball);
-                        ball.destroy();
-                        this.balls.splice(ballToBeRemoved, 1);
-                        //ball is full, so reset the ball position and change the turn
-                    }else{
-                        this.currentPlayer = 1;
-                    }
-                    //full ball case for player 1 :)
-                }else{
-                    if(ball.getID() <= 7){
-                        this.playerOneBallList.push(ball)
-                        this.playerOneBallList.push(ball);
-                        ball.destroy();
-                        this.balls.splice(ballToBeRemoved, 1);
-                    }
-                }
-            }
-        }
-        else if(this.currentPlayer === 1){
-
-        }
-
-    } */
-
-    processBallSinking(ball) {
+    ballPocketColHandler(ball) {
         const ballToBeRemoved = this.balls.indexOf(ball);
 
         if (this.currentPlayer === 0) {
-            if (!this.playerOneBallList || this.playerOneBallList.length === 0) {
-                this.playerOneBallList = [ball];
-                this.assignBallDesignations(ball);
-            } else {
-                if (this.playerOnePlays === "half" && ball.getID() >= 9) {
+            if (this.playerOnePlays === '') {
+                //Full
+                if (ball.getID() <= 7 && this.playerTwoPlays !== 'full') {
                     this.playerOneBallList.push(ball);
-                    ball.destroy();
-                    this.balls.splice(ballToBeRemoved, 1);
-                } else if (this.playerOnePlays === "full" && ball.getID() <= 7) {
+                    this.playerOnePlays = 'full';
+                    this.playerTwoPlays = 'half';
+                } else if (ball.getID() >= 9 && this.playerTwoPlays !== 'half') {
                     this.playerOneBallList.push(ball);
-                    ball.destroy();
-                    this.balls.splice(ballToBeRemoved, 1);
-                } else {
-                    this.checkTurnChange();
+                    this.playerOnePlays = 'half';
+                    this.playerTwoPlays = 'full';
+
                 }
+            } else if (this.playerOneBallList.length == 7) {
+                if (ball.getID() == 8) {
+                    this.playerOneBallList.push(ball)
+                    this.gameWinner = 0;
+                }
+            } else if (this.playerOnePlays === 'full') {
+                if (ball.getID() <= 7) {
+                    this.playerOneBallList.push(ball)
+                } else {
+                    this.switchPlayerTurn();
+                }
+            } else if (this.playerOnePlays === 'half') {
+                if (ball.getID() >= 9) {
+                    this.playerOneBallList.push(ball)
+                } else {
+                    this.switchPlayerTurn();
+                }
+
             }
-        } else if (this.currentPlayer === 1) {
-            if (!this.playerTwoBallList || this.playerTwoBallList.length === 0) {
-                this.playerTwoBallList = [ball];
-                this.assignBallDesignations(ball);
-            } else {
-                if (this.playerTwoPlays === "half" && ball.getID() >= 9) {
+
+
+        }
+        if (this.currentPlayer === 1) {
+            if (this.playerTwoPlays === '') {
+                //Full
+                if (ball.getID() <= 7 && this.playerOnePlays !== 'full') {
                     this.playerTwoBallList.push(ball);
-                    ball.destroy();
-                    this.balls.splice(ballToBeRemoved, 1);
-                } else if (this.playerTwoPlays === "full" && ball.getID() <= 7) {
-                    this.playerTwoBallList.push(ball);
-                    ball.destroy();
-                    this.balls.splice(ballToBeRemoved, 1);
-                } else {
-                    this.checkTurnChange();
+                    this.playerTwoPlays = 'full';
+                    this.playerOnePlays = 'half';
+                    //half
+                } else if (ball.getID() >= 9 && this.playerOnePlays !== 'half') {
+                    this.playerOneBallList.push(ball);
+                    this.playerTwoPlays = 'half';
+                    this.playerOnePlays = 'full';
+
                 }
+            } else if (this.playerTwoBallList.length == 7) {
+                if (ball.getID() == 8) {
+                    this.playerTwoBallList.push(ball)
+                    this.gameWinner = 1;
+                }
+            } else if (this.playerTwoPlays === 'full') {
+                if (ball.getID() <= 7) {
+                    this.playerTwoBallList.push(ball);
+                } else {
+                    this.switchPlayerTurn();
+                }
+            } else if (this.playerTwoPlays === 'half') {
+                if (ball.getID() >= 9) {
+                    this.playerTwoBallList.push(ball);
+                } else {
+                    this.switchPlayerTurn();
+                }
+
+
             }
         }
+        this.drawPlayerBalls();
+        console.log("p1: " + this.playerOnePlays + "p2: " + this.playerTwoPlays);
+
     }
 
-    assignBallDesignations(ball) {
-        if (ball.getID() >= 9) {
-            this.playerOnePlays = "half";
-            this.playerTwoPlays = "full";
-        } else {
-            this.playerOnePlays = "full";
-            this.playerTwoPlays = "half";
-        }
-    }
 
     switchPlayerTurn() {
         if (this.currentPlayer === 0) {
@@ -267,16 +350,7 @@ export default class Billiard extends Phaser.Scene {
             this.currentPlayer = 0;
         }
     }
-    checkTurnChange() {
-        const allBallsStopped = this.balls.every((ball) => {
-            return ball.body.velocity.x === 0 && ball.body.velocity.y === 0;
-        });
 
-        if (allBallsStopped) {
-            this.switchPlayerTurn();
-            this.resetCueBallPosition();
-        }
-    }
 
     resetCueBallPosition() {
         this.cueBall.setVelocity(0);
@@ -284,43 +358,17 @@ export default class Billiard extends Phaser.Scene {
     }
 
 
-
     ballPocketOverlapHandler(ball, pocket) {
         const ballToBeRemoved = this.balls.indexOf(ball);
         console.log("Ball " + ball.getID() + " Hit the pocket.");
 
         if (ball.getID() !== 0) {
-            this.processBallSinking(ball);
+            this.ballPocketColHandler(ball);
         } else {
             this.switchPlayerTurn();
             this.resetCueBallPosition();
         }
     }
-
-    /*
-    ballPocketOverlapHandler(ball, pocket) {
-        const ballTobeRemoved = this.balls.indexOf(ball);
-        console.log("Ball " + ball.getID() + " Hit the pocket.");
-        console.log("Player: " + this.currentPlayer + "")
-        if(ball.id !== 0) {
-            //this.winConditionCheckEightBall(ball, pocket, ballTobeRemoved);
-            this.processBallSinking(ball);
-        }else{
-
-            if(this.currentPlayer == 0){
-                this.currentPlayer = 1;
-            }
-            else{
-                this.currentPlayer = 0;
-            }
-            this.cueBall.setVelocity(0);
-            this.cueBall.setX(this.ballX);
-            this.cueBall.setY(this.ballY);
-        }
-
-
-    }
-    */
 
 
     createEightBallGame(ballScale) {
@@ -330,11 +378,11 @@ export default class Billiard extends Phaser.Scene {
         let yValues: any[] = [];
         let oldYValue: number = yStart;
         const xSpacing: number = 30;
-        const ySpacing : number = 15;
+        const ySpacing: number = 15;
         let i = 1;
         let idCount = 1;
 
-        while(i < 6){
+        while (i < 6) {
             xValues.push(xStart);
             for (let j = 6; j > i; j--) {
                 yValues.push(yStart);
@@ -352,19 +400,19 @@ export default class Billiard extends Phaser.Scene {
         let ballId = 1;
         while (xValues.length > 0) {
             for (let k = 0; k < xValues.length; k++) {
-               // console.log(yValues[index] + " " +  xValues[k]);
                 this.balls.push(new Ball({
                     scene: this,
                     x: xValues[k],
                     y: yValues[index],
-                    texture: 'purpleBall',
+                    texture: 'ball' + ballId,
                     id: ballId
                 }).setScale(ballScale));
 
                 index++;
                 ballId++;
             }
-            xValues.splice(0,1);
+            //Remove the first element of my xValues array. Reducing the balls to be added by 1
+            xValues.splice(0, 1);
 
         }
 
@@ -385,7 +433,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: {y: 0},
-            debug: true
+            debug: false
         }
     }
 };

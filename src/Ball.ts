@@ -15,10 +15,10 @@ export class Ball extends Phaser.Physics.Arcade.Sprite {
         config.scene.physics.add.existing(this);
 
         // Set the bounce property for the ball
-        this.setBounce(1,1);
+        this.setBounce(0.90,0.90);
         this.setCollideWorldBounds(true);
         this.body.setMass(1);
-        this.setDrag(75, 75);
+        this.setDrag(85, 85);
 
 
         this.setInteractive();
