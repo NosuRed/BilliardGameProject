@@ -72,45 +72,43 @@ export default class Billiard extends Phaser.Scene {
             true, true, true, true);
 
         //array of balls
-        this.balls.push(this.cueBall);
+
         this.createEightBallGame(ballScale);
+        this.balls.push(this.cueBall);
 
         this.drawPockets(table);
 
-            // Add collision between the cue ball and each ball in the array
-            this.balls.forEach(ball => {
-                this.physics.add.collider(this.cueBall, ball);
-            });
+        // Add collision between the cue ball and each ball in the array
+        this.balls.forEach(ball => {
+            this.physics.add.collider(this.cueBall, ball);
+        });
 
-            //collision between each pair of balls in the array
-            for (let i = 0; i < this.balls.length; i++) {
-                for (let j = i + 1; j < this.balls.length; j++) {
-                    this.physics.add.collider(this.balls[i], this.balls[j]);
-                }
+        //collision between each pair of balls in the array
+        for (let i = 0; i < this.balls.length; i++) {
+            for (let j = i + 1; j < this.balls.length; j++) {
+                this.physics.add.collider(this.balls[i], this.balls[j]);
+            }
+        }
+
+
+        const allBallsStopped = this.balls.every((ball) => {
+            return ball.body.velocity.length() < 2;
+        });
+
+
+        this.input.on('pointermove', (pointer) => {
+            if (lineGraphics) {
+                lineGraphics.clear();
             }
 
-
-            const allBallsStopped = this.balls.every((ball) => {
-                return ball.body.velocity.length() < 2;
-            });
-
-
-
-
-
-            this.input.on('pointermove', (pointer) => {
-                if (lineGraphics) {
-                    lineGraphics.clear();
-                }
-
-                // Draw a line from the cue ball to the mouse cursor
-                lineGraphics = this.add.graphics();
-                lineGraphics.lineStyle(2, 0xffffff);
-                lineGraphics.beginPath();
-                lineGraphics.moveTo(this.cueBall.x, this.cueBall.y);
-                lineGraphics.lineTo(pointer.x, pointer.y);
-                lineGraphics.strokePath();
-            });
+            // Draw a line from the cue ball to the mouse cursor
+            lineGraphics = this.add.graphics();
+            lineGraphics.lineStyle(2, 0xffffff);
+            lineGraphics.beginPath();
+            lineGraphics.moveTo(this.cueBall.x, this.cueBall.y);
+            lineGraphics.lineTo(pointer.x, pointer.y);
+            lineGraphics.strokePath();
+        });
 
         this.input.on('pointerup', () => {
             if (lineGraphics) {
@@ -120,56 +118,56 @@ export default class Billiard extends Phaser.Scene {
         });
 
 
-            this.input.on('pointerdown', (pointer) => {
+        this.input.on('pointerdown', (pointer) => {
 
-                if (pointer.leftButtonDown() && this.gameWinner === -1) {
-                    if (this.cueBall.body.velocity.length() < 2 && allBallsStopped) {
-                        this.distance = Phaser.Math.Distance.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
-                        let angle = Phaser.Math.Angle.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
-                        this.physics.velocityFromRotation(angle,
-                            this.distance * ballStrengthModifier,
-                            this.cueBall.body.velocity);
-                        this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
-                    }
+            if (pointer.leftButtonDown() && this.gameWinner === -1) {
+                if (this.cueBall.body.velocity.length() < 2 && allBallsStopped) {
+                    this.distance = Phaser.Math.Distance.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
+                    let angle = Phaser.Math.Angle.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
+                    this.physics.velocityFromRotation(angle,
+                        this.distance * ballStrengthModifier,
+                        this.cueBall.body.velocity);
+                    this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
                 }
+            }
 
-            });
+        });
 
-            this.velocityTX = this.add.text(100, 0, 'Strength: 0', {fontSize: '32px', color: '#111111'});
-            this.playersTurnTX = this.add.text(400, 0, 'Player: 0', {fontSize: '32px', color: '#111111'});
-            this.add.text(50, 525, 'Player 1 Balls: ', {fontSize: "16px", color: '#111111'})
-            this.add.text(450, 525, 'Player 2 Balls: ', {fontSize: "16px", color: '#111111'})
-            this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
+        this.velocityTX = this.add.text(100, 0, 'Strength: 0', {fontSize: '32px', color: '#111111'});
+        this.playersTurnTX = this.add.text(400, 0, 'Player: 0', {fontSize: '32px', color: '#111111'});
+        this.add.text(50, 525, 'Player 1 Balls: ', {fontSize: "16px", color: '#111111'})
+        this.add.text(450, 525, 'Player 2 Balls: ', {fontSize: "16px", color: '#111111'})
+        this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
 
     }
 
     update() {
-            this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
-            if(this.currentPlayer == 0){
-                this.playersTurnTX.setText("Turn: Player: 1");
-            }else{
-                this.playersTurnTX.setText("Turn: Player: 2");
-            }
+        this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
+        if (this.currentPlayer == 0) {
+            this.playersTurnTX.setText("Turn: Player: 1");
+        } else {
+            this.playersTurnTX.setText("Turn: Player: 2");
+        }
 
-            this.balls.forEach((ball) => {
-                ball.update();
+        this.balls.forEach((ball) => {
+            ball.update();
 
-            });
-            this.cueBall.update();
-            if(this.gameWinner !== -1){
-                this.drawRestartButton();
-            }
+        });
+        this.cueBall.update();
+        if (this.gameWinner !== -1) {
+            this.drawRestartButton();
+        }
 
     }
 
 
-    drawRestartButton(){
+    drawRestartButton() {
         const x: number = 325;
         const y: number = 200;
-        if(this.currentPlayer == 0){
-            this.add.text(x, y -25, 'Player: ' + 1 + " Won!" );
-        }else{
-            this.add.text(x, y -25, 'Player: ' + 2 + " Won!" );
+        if (this.currentPlayer == 0) {
+            this.add.text(x, y - 25, 'Player: ' + 1 + " Won!");
+        } else {
+            this.add.text(x, y - 25, 'Player: ' + 2 + " Won!");
         }
         const button = this.add.text(x, y, 'Play Again')
         button.setInteractive();
@@ -181,7 +179,7 @@ export default class Billiard extends Phaser.Scene {
             this.scene.restart();
         });
 
-}
+    }
 
     drawPlayerBalls() {
         const p1StartPosX: number = 100;
@@ -413,6 +411,52 @@ export default class Billiard extends Phaser.Scene {
             xValues.splice(0, 1);
 
         }
+
+        this.shuffleBallList();
+    }
+
+
+    shuffleBallList() {
+        //https://javascript.info/task/shuffle
+        const eightBallFutureXPos = this.balls[6].x;
+        const eightBallFutureYPos = this.balls[6].y;
+        const eightBallXPos = this.balls[7].x;
+        const eightBallYPos = this.balls[7].y;
+
+        this.balls[6].setX(eightBallFutureXPos);
+        this.balls[6].setY(eightBallFutureYPos);
+        this.balls[7].setX(eightBallXPos);
+        this.balls[7].setY(eightBallYPos);
+        let shuffledBallPositions = [];
+
+        for (let i = 0; i < this.balls.length; i++) {
+                let ballsPos = [this.balls[i].x, this.balls[i].y];
+                shuffledBallPositions.push(ballsPos);
+
+        }
+        for (let i = shuffledBallPositions.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i + 1)); // random index from 0 to i
+
+            // swap elements array[i] and array[j]
+            // we use "destructuring assignment" syntax to achieve that
+            // you'll find more details about that syntax in later chapters
+            // same can be written as:
+            // let t = array[i]; array[i] = array[j]; array[j] = t
+            [shuffledBallPositions[i], shuffledBallPositions[j]] = [shuffledBallPositions[j], shuffledBallPositions[i]];
+        }
+
+
+        for (const BallPos in this.balls) {
+            let x = shuffledBallPositions[BallPos][0];
+            let y = shuffledBallPositions[BallPos][1];
+            this.balls[BallPos].setX(x);
+            this.balls[BallPos].setY(y);
+
+
+
+        }
+
+        console.log(shuffledBallPositions)
 
 
     }
