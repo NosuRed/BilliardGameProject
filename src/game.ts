@@ -123,15 +123,12 @@ export default class Billiard extends Phaser.Scene {
             this.input.on('pointerdown', (pointer) => {
 
                 if (pointer.leftButtonDown() && this.gameWinner === -1) {
-                    lineGraphics.destroy();
-                    lineGraphics = null;
                     if (this.cueBall.body.velocity.length() < 2 && allBallsStopped) {
                         this.distance = Phaser.Math.Distance.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
                         let angle = Phaser.Math.Angle.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
                         this.physics.velocityFromRotation(angle,
                             this.distance * ballStrengthModifier,
                             this.cueBall.body.velocity);
-
                         this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
                     }
                 }
@@ -142,6 +139,7 @@ export default class Billiard extends Phaser.Scene {
             this.playersTurnTX = this.add.text(400, 0, 'Player: 0', {fontSize: '32px', color: '#111111'});
             this.add.text(50, 525, 'Player 1 Balls: ', {fontSize: "16px", color: '#111111'})
             this.add.text(450, 525, 'Player 2 Balls: ', {fontSize: "16px", color: '#111111'})
+            this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
 
     }
 
