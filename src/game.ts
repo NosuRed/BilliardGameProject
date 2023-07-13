@@ -234,7 +234,6 @@ export default class Billiard extends Phaser.Scene {
     drawPockets(table) {
         const graphics = this.add.graphics();
         const pocketSize: number = 20;
-        const alphaChannel: number = 0.9;
 
         this.pockets = [
             //Upper Left Corner
@@ -383,7 +382,6 @@ export default class Billiard extends Phaser.Scene {
 
     ballPocketOverlapHandler(ball, pocket) {
         this.pocketHasBeenHit = true;
-        const ballToBeRemoved = this.balls.indexOf(ball);
         // console.log("Ball " + ball.getID() + " Hit the pocket.");
         if (ball.getID() !== 0) {
             this.ballPocketColHandler(ball);
