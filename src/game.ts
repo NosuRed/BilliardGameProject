@@ -19,6 +19,7 @@ export default class Billiard extends Phaser.Scene {
     private playerTwoPlays: string = '';
     private playerOneBallList: any[] = [];
     private playerTwoBallList: any[] = [];
+    private pocketHasBeenHit: boolean = false;
 
     constructor() {
         super('Billiard');
@@ -41,6 +42,7 @@ export default class Billiard extends Phaser.Scene {
         this.playerTwoPlays = '';
         this.playerOneBallList = [];
         this.playerTwoBallList = [];
+        this.pocketHasBeenHit = true;
     }
 
     preload() {
@@ -71,7 +73,6 @@ export default class Billiard extends Phaser.Scene {
         this.physics.world.setBounds(15, 100, 775, 400,
             true, true, true, true);
 
-        //array of balls
 
         this.createEightBallGame(ballScale);
         this.balls.push(this.cueBall);
@@ -96,20 +97,23 @@ export default class Billiard extends Phaser.Scene {
         });
 
 
-        this.input.on('pointermove', (pointer) => {
-            if (lineGraphics) {
-                lineGraphics.clear();
-            }
+        //Drawing the white line :D
+        if (this.cueBall.body.velocity.length() < 2) {
+            this.input.on('pointermove', (pointer) => {
+                if (lineGraphics) {
+                    lineGraphics.clear();
+                }
 
-            // Draw a line from the cue ball to the mouse cursor
-            lineGraphics = this.add.graphics();
-            lineGraphics.lineStyle(2, 0xffffff);
-            lineGraphics.beginPath();
-            lineGraphics.moveTo(this.cueBall.x, this.cueBall.y);
-            lineGraphics.lineTo(pointer.x, pointer.y);
-            lineGraphics.strokePath();
-        });
+                // Draw a line from the cue ball to the mouse cursor
+                lineGraphics = this.add.graphics();
+                lineGraphics.lineStyle(2, 0xffffff);
+                lineGraphics.beginPath();
+                lineGraphics.moveTo(this.cueBall.x, this.cueBall.y);
+                lineGraphics.lineTo(pointer.x, pointer.y);
+                lineGraphics.strokePath();
+            });
 
+        }
         this.input.on('pointerup', () => {
             if (lineGraphics) {
                 lineGraphics.destroy();
@@ -128,21 +132,24 @@ export default class Billiard extends Phaser.Scene {
                         this.distance * ballStrengthModifier,
                         this.cueBall.body.velocity);
                     this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
+                    this.pocketHasBeenHit = false;
                 }
             }
-
         });
+
 
         this.velocityTX = this.add.text(100, 0, 'Strength: 0', {fontSize: '32px', color: '#111111'});
         this.playersTurnTX = this.add.text(400, 0, 'Player: 0', {fontSize: '32px', color: '#111111'});
         this.add.text(50, 525, 'Player 1 Balls: ', {fontSize: "16px", color: '#111111'})
         this.add.text(450, 525, 'Player 2 Balls: ', {fontSize: "16px", color: '#111111'})
-        this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
 
     }
 
     update() {
-        this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
+        if(this.cueBall.body.velocity > 0)
+        {
+            this.velocityTX.setText('Strength: ' + Math.floor(this.distance));
+        }
         if (this.currentPlayer == 0) {
             this.playersTurnTX.setText("Turn: Player: 1");
         } else {
@@ -157,7 +164,17 @@ export default class Billiard extends Phaser.Scene {
         if (this.gameWinner !== -1) {
             this.drawRestartButton();
         }
+        let ballSpeed = this.balls.every(ball => {
+            return ball.body.velocity.length() < 2
+        });
+        if (this.cueBall.body.velocity.length() < 2 && ballSpeed) {
+            if (this.pocketHasBeenHit == false) {
+                this.switchPlayerTurn();
+                this.pocketHasBeenHit = true;
 
+            }
+            console.log(this.pocketHasBeenHit)
+        }
     }
 
 
@@ -173,7 +190,7 @@ export default class Billiard extends Phaser.Scene {
         button.setInteractive();
         button.setFontSize(20);
         button.setPadding(10, 5);
-        button.setBackgroundColor('#333333');
+        button.setBackgroundColor('#27282c');
         button.setStroke('#ffffff', 2);
         button.on('pointerdown', () => {
             this.scene.restart();
@@ -262,7 +279,6 @@ export default class Billiard extends Phaser.Scene {
 
     ballPocketColHandler(ball) {
         const ballToBeRemoved = this.balls.indexOf(ball);
-
         if (this.currentPlayer === 0) {
             if (this.playerOnePlays === '') {
                 //Full
@@ -280,6 +296,11 @@ export default class Billiard extends Phaser.Scene {
                 if (ball.getID() == 8) {
                     this.playerOneBallList.push(ball)
                     this.gameWinner = 0;
+                } else if (this.playerOneBallList.length < 7) {
+                    if (ball.getID() == 8) {
+                        this.switchPlayerTurn();
+                        this.resetCueBallPosition();
+                    }
                 }
             } else if (this.playerOnePlays === 'full') {
                 if (ball.getID() <= 7) {
@@ -316,6 +337,11 @@ export default class Billiard extends Phaser.Scene {
                 if (ball.getID() == 8) {
                     this.playerTwoBallList.push(ball)
                     this.gameWinner = 1;
+                } else if (this.playerTwoBallList.length < 7) {
+                    if (ball.getID() == 8) {
+                        this.resetCueBallPosition();
+                       this.switchPlayerTurn();
+                    }
                 }
             } else if (this.playerTwoPlays === 'full') {
                 if (ball.getID() <= 7) {
@@ -334,7 +360,6 @@ export default class Billiard extends Phaser.Scene {
             }
         }
         this.drawPlayerBalls();
-        console.log("p1: " + this.playerOnePlays + "p2: " + this.playerTwoPlays);
 
     }
 
@@ -345,19 +370,21 @@ export default class Billiard extends Phaser.Scene {
         } else {
             this.currentPlayer = 0;
         }
+        this.pocketHasBeenHit = false;
     }
 
 
     resetCueBallPosition() {
         this.cueBall.setVelocity(0);
         this.cueBall.setPosition(this.ballX, this.ballY);
+        this.switchPlayerTurn();
     }
 
 
     ballPocketOverlapHandler(ball, pocket) {
+        this.pocketHasBeenHit = true;
         const ballToBeRemoved = this.balls.indexOf(ball);
-        console.log("Ball " + ball.getID() + " Hit the pocket.");
-
+        // console.log("Ball " + ball.getID() + " Hit the pocket.");
         if (ball.getID() !== 0) {
             this.ballPocketColHandler(ball);
         } else {
@@ -412,6 +439,7 @@ export default class Billiard extends Phaser.Scene {
 
         }
 
+
         this.shuffleBallList();
     }
 
@@ -420,18 +448,15 @@ export default class Billiard extends Phaser.Scene {
         //https://javascript.info/task/shuffle
         const eightBallFutureXPos = this.balls[6].x;
         const eightBallFutureYPos = this.balls[6].y;
-        const eightBallXPos = this.balls[7].x;
-        const eightBallYPos = this.balls[7].y;
+        let eightBallXPos = 0;
+        let eightBallYPos = 0;
 
-        this.balls[6].setX(eightBallFutureXPos);
-        this.balls[6].setY(eightBallFutureYPos);
-        this.balls[7].setX(eightBallXPos);
-        this.balls[7].setY(eightBallYPos);
+
         let shuffledBallPositions = [];
 
         for (let i = 0; i < this.balls.length; i++) {
-                let ballsPos = [this.balls[i].x, this.balls[i].y];
-                shuffledBallPositions.push(ballsPos);
+            let ballsPos = [this.balls[i].x, this.balls[i].y];
+            shuffledBallPositions.push(ballsPos);
 
         }
         for (let i = shuffledBallPositions.length - 1; i > 0; i--) {
@@ -451,12 +476,40 @@ export default class Billiard extends Phaser.Scene {
             let y = shuffledBallPositions[BallPos][1];
             this.balls[BallPos].setX(x);
             this.balls[BallPos].setY(y);
-
-
-
         }
 
-        console.log(shuffledBallPositions)
+        let tempX = 0;
+        let tempY = 0;
+        let tempEightPos = "";
+        let tempPos = "";
+
+        /**
+         * The Eight Ball has a fixed position on the board:
+         * Middle of the third row.
+         * To achieve this, we check at what position the 8-ball currently is and save that
+         * we also check which ball is currently occupying the 8-ball position
+         * then we save those positions
+         * we can now use these positions to swap the balls!
+         */
+        for (const ball in this.balls) {
+            if (this.balls[ball].getID() == 8) {
+                eightBallXPos = this.balls[ball].x;
+                eightBallYPos = this.balls[ball].y;
+                tempEightPos = ball;
+            }
+            if (this.balls[ball].x === eightBallFutureXPos && this.balls[ball].y === eightBallFutureYPos) {
+                tempX = this.balls[ball].x;
+                tempY = this.balls[ball].y;
+                tempPos = ball;
+            }
+        }
+
+        // Now that we have both balls positions we can switch them!
+        this.balls[tempEightPos].x = tempX;
+        this.balls[tempEightPos].y = tempY;
+
+        this.balls[tempPos].x = eightBallXPos;
+        this.balls[tempPos].y = eightBallYPos;
 
 
     }
@@ -471,6 +524,10 @@ const config = {
     width: 800,
     height: 600,
     scene: Billiard,
+    scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
     physics: {
         default: 'arcade',
         arcade: {
