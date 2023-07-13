@@ -20,6 +20,7 @@ export default class Billiard extends Phaser.Scene {
     private playerOneBallList: any[] = [];
     private playerTwoBallList: any[] = [];
     private pocketHasBeenHit: boolean = false;
+    private allBallsStopped: Boolean;
 
     constructor() {
         super('Billiard');
@@ -92,7 +93,7 @@ export default class Billiard extends Phaser.Scene {
         }
 
 
-        const allBallsStopped = this.balls.every((ball) => {
+        this.allBallsStopped = this.balls.every((ball) => {
             return ball.body.velocity.length() < 2;
         });
 
@@ -125,7 +126,7 @@ export default class Billiard extends Phaser.Scene {
         this.input.on('pointerdown', (pointer) => {
 
             if (pointer.leftButtonDown() && this.gameWinner === -1) {
-                if (this.cueBall.body.velocity.length() < 2 && allBallsStopped) {
+                if (this.cueBall.body.velocity.length() < 2 && this.allBallsStopped) {
                     this.distance = Phaser.Math.Distance.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
                     let angle = Phaser.Math.Angle.Between(this.cueBall.x, this.cueBall.y, pointer.x, pointer.y);
                     this.physics.velocityFromRotation(angle,
@@ -253,7 +254,7 @@ export default class Billiard extends Phaser.Scene {
 
         this.pockets.forEach((pocket) => {
             const pocketCollider = this.physics.add.sprite(pocket.x, pocket.y, 'cueBall');
-            pocketCollider.setScale(0.4);
+            pocketCollider.setScale(0.3);
             pocketCollider.setVisible(false);
             pocketCollider.setCircle(45); // Set circular hitbox
             pocketCollider.body.setAllowGravity(false); // Make the collider unaffected by gravity
