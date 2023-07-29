@@ -2,7 +2,6 @@ import * as Phaser from 'phaser';
 import {Ball} from './Ball';
 
 export default class Billiard extends Phaser.Scene {
-    private cueBallSpeed = 1000;
     private ballX: number = 200;
     private ballY: number = 300;
     private balls: any[] = [];
@@ -27,7 +26,6 @@ export default class Billiard extends Phaser.Scene {
     }
 
     init() {
-        this.cueBallSpeed = 1000;
         this.ballX = 200;
         this.ballY = 300;
         this.balls = [];
@@ -394,43 +392,69 @@ export default class Billiard extends Phaser.Scene {
 
 
     createEightBallGame(ballScale) {
+        //Declaring the starting position of the first ball.
         let xStart: number = 400;
         let yStart: number = 300;
+        //Declaring two lists, one for the x values and one for the y values
         let xValues: any[] = [];
         let yValues: any[] = [];
+        //We need to keep track of the y value of the balls that came before
         let oldYValue: number = yStart;
+        //spacing between the balls, can be easily adjusted here
         const xSpacing: number = 30;
         const ySpacing: number = 15;
         let i = 1;
-        let idCount = 1;
 
+            //This creates the coordinates for, x and y for the ball positions
+         //We start with i = 1. As long as it is smaller than 6 we loop through it
+        // This is done because we 5 rows
         while (i < 6) {
+            //we add the x values to the list
             xValues.push(xStart);
+            // each time we iterate we decrase j by one. j = 6 here.
+            // this is done since we have 5 balls in the first row, then 4 in the next etc.
             for (let j = 6; j > i; j--) {
                 yValues.push(yStart);
+                //yStart - 20, since that is the y position each ball in the same row is lower than the one before it!
                 yStart -= 20;
             }
+            //The new starting value for the next row of balls.
             yStart = oldYValue + ySpacing;
+            // the old value saved since we need this later to be able to repeat our pattern
+            // ex: y = 300 for the first row, y = 320 for the second row, 340 for the third etc.
             oldYValue = yStart;
+            //Since the balls need to move along the x axis
             xStart += xSpacing;
-            idCount++;
             i++;
 
 
         }
+
+
+        //now we want to add our Balls with their position to a list
+        //index
         let index = 0;
+        // id will be given to a ball
         let ballId = 1;
+        //while the xValues list is bigger than 0
         while (xValues.length > 0) {
+            //while k is smaller than x.values
             for (let k = 0; k < xValues.length; k++) {
+                //Add a ball with its given x and y values
                 this.balls.push(new Ball({
                     scene: this,
+                    //the value from the xValues list based in k
                     x: xValues[k],
+                    //using the index here, since some y values share the same x values
                     y: yValues[index],
                     texture: 'ball' + ballId,
                     id: ballId
                 }).setScale(ballScale));
 
+                //while k goes back to 0 after it is bigger than the length of xValues
+                //index keeps increasing up to 14
                 index++;
+                //ball id given to each ball from 1-15
                 ballId++;
             }
             //Remove the first element of my xValues array. Reducing the balls to be added by 1
